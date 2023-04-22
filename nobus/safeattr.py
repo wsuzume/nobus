@@ -48,7 +48,7 @@ class Typed:
     def __repr__(self):
         xs = f"{self.__class__.__name__}(value={self.value.__repr__()}"
         if self.type is not None:
-            xs += f", type_={self.type.__repr__()}"
+            xs += f", type_={self.type}"
         xs += f", optional={self.optional.__repr__()}"
         xs += ")"
         return xs
