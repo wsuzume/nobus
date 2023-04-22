@@ -32,7 +32,6 @@ class Hoge(SafeAttrABC):
 
         self._x = DeleteCheck()
 
-
 def test_SafeAttrABC():
     hoge = Hoge('piyo')
 
