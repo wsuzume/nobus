@@ -16,7 +16,7 @@ def typechecker(function):
 
 class Typed:
     @staticmethod
-    def typecheck(value, type_, optional):
+    def _typecheck(value, type_, optional):
         if value is None:
             if optional:
                 # optional で None なら OK
@@ -37,13 +37,16 @@ class Typed:
             raise TypeError(f"value must be instance of {type_} but actual type {type(value)}.")
 
         return
+    
+    def typecheck(self, value):
+        self._typecheck(value, self.type, self.optional)
+        return value
 
     def __init__(self, value, type_=None, optional=False):
-        self.typecheck(value, type_, optional)
-
-        self._value = value
         self._type = type_
         self._optional = optional
+
+        self._value = self.typecheck(value)
 
     def __repr__(self):
         xs = f"{self.__class__.__name__}(value={self.value.__repr__()}"
@@ -76,9 +79,7 @@ class Typed:
             value = value.value
 
         # value に対して型チェック
-        self.typecheck(value, self.type, self.optional)
-
-        self._value = value
+        self._value = self.typecheck(value)
     
 class Immutable(Typed):
     def __init__(self, value, type_=None, optional=False):
@@ -260,12 +261,19 @@ class SafeAttrABC(ABC):
         
         # メソッドの引数を優先して返す
         def selector_of(name):
-            def arg_override(self, x=None, f=None):
-                if x is not None:
-                    if f is not None:
-                        return f(x)
-                    return x
-                return getattr(self, name)
+            def arg_override(self, x=None, f=None, typecheck=True):
+                if x is None:
+                    return getattr(self, name)
+                
+                if f is not None:
+                    x = f(x)
+                
+                if typecheck:
+                    attr = getattr(self, '_safeattr_' + name)
+                    return attr.typecheck(x)
+                    
+                return x
+                
             return arg_override
         
         # arg_override を追加する

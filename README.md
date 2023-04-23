@@ -1,7 +1,7 @@
 # nobus
 "Nobody But Us" modules for Python
 
-## What is nobus
+# What is nobus
 [NOBUS（Nobody But Us）](https://en.wikipedia.org/wiki/NOBUS)は「我々（United States）だけが利用できる脆弱性」を意味するアメリカ国家安全保証局（NSA）の標語です。
 
 `nobus` モジュールはごく一部の変人しか使わないであろう、Python の特殊メソッドをフル活用したクラスハッキングを詰め込んだモジュールです。
@@ -15,7 +15,11 @@
 * Zenn: [Josh Nobus (@wsuzume)](https://zenn.dev/wsuzume)
 * Twitter: [@wsuzume](https://twitter.com/wsuzume)
 
-## Usage
+# Usage
+## install
 ```
 $ pip install nobus
 ```
+
+## safeattr.py
+いまのところは[この Zenn の記事](https://zenn.dev/wsuzume/articles/fd6bb1d6b792d7)をドキュメント代わりにしてください。

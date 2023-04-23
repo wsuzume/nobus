@@ -31,6 +31,12 @@ class Hoge(SafeAttrABC):
         self.yagi = self.typed(None, str, optional=True)
 
         self._x = DeleteCheck()
+    
+        self.voice = Typed('Bow!', str, optional=True)
+
+    def hello(self, voice):
+        voice = self.arg_voice(voice)
+        return voice
 
 def test_SafeAttrABC():
     hoge = Hoge('piyo')
