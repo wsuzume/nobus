@@ -135,7 +135,7 @@ class SafeAttrABC(ABC):
             return False
         return self._is_safeattr_derived_class
     
-    def __getattr__(self, name):
+    def __getattribute__(self, name):
         if not name.startswith('_') or name.startswith('_safeattr_'):
             # 隠蔽されたメンバに対するアクセスではないか、
             # 隠蔽されたメンバの実体に対する直アクセス
