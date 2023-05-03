@@ -16,34 +16,38 @@ def typechecker(function):
 
 class Typed:
     @staticmethod
-    def _typecheck(value, type_, optional):
+    def _typecheck(value, type_, f, optional):
         if value is None:
             if optional:
                 # optional で None なら OK
-                return
+                return None
             # optional じゃないのに value が None である 
             raise TypeError(f"value is None even though it is not optional.")
         
+        # f が None でなければ変換
+        if f is not None:
+            value = f(value)
+
         # 以降は value が None ではない
         if (type_ is not None):
             # 型が指定されてるならチェックを入れる
             if isinstance(type_, TypeChecker):
                 if type_(value):
-                    return
+                    return value
                 raise TypeError(f"typechecking by '{type_}' returned False.")
 
             if isinstance(value, type_):
-                return True
+                return value
             raise TypeError(f"value must be instance of {type_} but actual type {type(value)}.")
 
-        return
+        return value
     
     def typecheck(self, value):
-        self._typecheck(value, self.type, self.optional)
-        return value
+        return self._typecheck(value, self.type, self.f, self.optional)
 
-    def __init__(self, value, type_=None, optional=False):
+    def __init__(self, value, type_=None, *, f=None, optional=False):
         self._type = type_
+        self._f = f
         self._optional = optional
 
         self._value = self.typecheck(value)
@@ -52,6 +56,8 @@ class Typed:
         xs = f"{self.__class__.__name__}(value={self.value.__repr__()}"
         if self.type is not None:
             xs += f", type_={self.type}"
+        if self.f is not None:
+            xs += f", f={self.f.__name__}"
         xs += f", optional={self.optional.__repr__()}"
         xs += ")"
         return xs
@@ -65,6 +71,10 @@ class Typed:
         return self._type
     
     @property
+    def f(self):
+        return self._f
+
+    @property
     def optional(self):
         return self._optional
     
@@ -76,14 +86,19 @@ class Typed:
                 raise TypeError(f"value must be instance of {self.type} but actual type {value.type}.")
         
         if isinstance(value, Typed):
+            # Typed の場合は unwrap する
+            # f で変換済みとみなす
             value = value.value
+        elif self.f is not None:
+            # 変換が定義されている場合は適用する
+            value = self.f(value)
 
         # value に対して型チェック
         self._value = self.typecheck(value)
     
 class Immutable(Typed):
-    def __init__(self, value, type_=None, optional=False):
-        super().__init__(value, type_, optional)
+    def __init__(self, value, type_=None, *, f=None, optional=False):
+        super().__init__(value, type_, f=f, optional=optional)
 
     @property
     def value(self):
@@ -94,30 +109,30 @@ class Immutable(Typed):
         raise AttributeError(f"immutable attribute 'value' cannot be rewritten.")
 
 class Protected(Typed):
-    def __init__(self, value, type_=None, optional=False):
-        super().__init__(value, type_, optional)
+    def __init__(self, value, type_=None, *, f=None, optional=False):
+        super().__init__(value, type_, f=f, optional=optional)
 
-def typed(value, type_=None, optional=False):
-    return Typed(value, type_, optional)
+def typed(value, type_=None, *, f=None, optional=False):
+    return Typed(value, type_, f=f, optional=optional)
 
-def immutable(value, type_=None, optional=False):
-    return Immutable(value, type_, optional)
+def immutable(value, type_=None, *, f=None, optional=False):
+    return Immutable(value, type_, f=f, optional=optional)
 
-def protected(value, type_=None, optional=False):
-    return Protected(value, type_, optional)    
+def protected(value, type_=None, *, f=None, optional=False):
+    return Protected(value, type_, f=f, optional=optional)    
 
 class SafeAttrABC(ABC):
     @staticmethod
-    def typed(x, type_=None, optional=False):
-        return Typed(x, type_, optional)
+    def typed(x, type_=None, *, f=None, optional=False):
+        return Typed(x, type_, f=f, optional=optional)
     
     @staticmethod
-    def immutable(x, type_=None, optional=False):
-        return Immutable(x, type_, optional)
+    def immutable(x, type_=None, *, f=None, optional=False):
+        return Immutable(x, type_, f=f, optional=optional)
 
     @staticmethod
-    def protected(x, type_=None, optional=False):
-        return Protected(x, type_, optional)
+    def protected(x, type_=None, *, f=None, optional=False):
+        return Protected(x, type_, f=f, optional=optional)
     
     def _safeattr_derive(self):
         if self.is_safeattr_derived_class:
@@ -264,13 +279,18 @@ class SafeAttrABC(ABC):
             def arg_override(self, x=None, f=None, typecheck=True):
                 if x is None:
                     return getattr(self, name)
-                
+
+                attr = getattr(self, '_safeattr_' + name)
                 if f is not None:
+                    # 型キャストが指定されていれば適用
                     x = f(x)
+                elif attr.f is not None:
+                    # 定義時に指定されたキャストあれば適用
+                    x = attr.f(x)
                 
+                # 必要なキャストは行われているはずなので f=None でよい
                 if typecheck:
-                    attr = getattr(self, '_safeattr_' + name)
-                    return attr.typecheck(x)
+                    return attr._typecheck(x, attr.type, f=None, optional=attr.optional)
                     
                 return x
                 

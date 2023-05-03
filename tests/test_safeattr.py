@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 
 from nobus.safeattr import Immutable, Protected, Typed, SafeAttrABC
 
@@ -33,6 +34,9 @@ class Hoge(SafeAttrABC):
         self._x = DeleteCheck()
     
         self.voice = Typed('Bow!', str, optional=True)
+
+        self.path1 = Typed('some/path', Path, f=Path, optional=False)
+        self.path2 = Typed(None, (str, Path), f=Path, optional=True)
 
     def hello(self, voice):
         voice = self.arg_voice(voice)
@@ -196,3 +200,32 @@ def test_SafeAttrABC():
 
     assert delete_check
     assert hoge._x == 5
+
+    # arg_x のテスト
+    greet = hoge.hello(voice=None)
+    assert greet == 'Bow!'
+
+    greet = hoge.hello(voice='Meow!')
+    assert greet == 'Meow!'
+
+    # 型キャスト機能のテスト
+    path1 = hoge.arg_path1(None)
+    path2 = hoge.arg_path2(None)
+    assert isinstance(path1, Path)
+    assert path2 is None
+
+    path1 = hoge.arg_path1('hoge.fuga')
+    path2 = hoge.arg_path2('piyo/poyo')
+    assert isinstance(path1, Path)
+    assert isinstance(path2, Path)
+    
+    path1 = hoge.arg_path1('hoge.fuga')
+    path2 = hoge.arg_path2('piyo/poyo', f=str)
+    assert isinstance(path1, Path)
+    assert isinstance(path2, str)
+
+    with pytest.raises(TypeError):
+        path2 = hoge.arg_path2('123', f=int)
+    
+    path2 = hoge.arg_path2('123', f=int, typecheck=False)
+    assert path2 == 123
