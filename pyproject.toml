@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nobus"
-version = "0.1.6"
+version = "0.1.7"
 description = ""
 authors = ["Josh Nobus"]
 license = "MIT"
@@ -9,6 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 tqdm = "^4.66.2"
+requests = "^2.28.2, !=2.30.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
